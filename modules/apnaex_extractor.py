@@ -126,3 +126,57 @@ async def extract_batch_apnaex_logic(batch_id, api_base, token, userid):
                     all_data.extend(res)
                     
     return all_data
+
+async def handle_course_topic(session, api_base, batch_id, subject_id, subject_name, topic, headers):
+    """Handle topic extraction."""
+    try:
+        topic_id = topic.get("topicid") or topic.get("_id") or topic.get("id")
+        topic_name = topic.get("topic_name") or topic.get("name") or "Unknown"
+
+        content_url = f"{api_base}/get/livecourseclassbycoursesubtopconceptapiv3?courseid={batch_id}&subjectid={subject_id}&topicid={topic_id}&start=-1"
+
+        data = await fetch(session, content_url, headers)
+
+        items = data.get("data", [])
+        results = []
+
+        for item in items:
+
+            name = item.get("Title") or item.get("title") or "file"
+            timestamp = item.get("created_at") or item.get("createdAt") or ""
+
+            # VIDEO
+            if item.get("material_type") == "VIDEO":
+
+                url = item.get("video_url") or item.get("url")
+
+                if url:
+                    results.append({
+                        "url": url,
+                        "name": name,
+                        "type": "video",
+                        "topicName": topic_name,
+                        "subjectName": subject_name,
+                        "timestamp": timestamp
+                    })
+
+            # PDF
+            elif item.get("material_type") in ["PDF", "DOCUMENT"]:
+
+                url = item.get("pdf_link") or item.get("url")
+
+                if url:
+                    results.append({
+                        "url": url,
+                        "name": name,
+                        "type": "pdf",
+                        "topicName": topic_name,
+                        "subjectName": subject_name,
+                        "timestamp": timestamp
+                    })
+
+        return results
+
+    except Exception as e:
+        LOGGER.error(f"Topic processing error: {e}")
+        return []
