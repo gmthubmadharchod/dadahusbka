@@ -6,9 +6,10 @@ aiohttp
 TgCrypto==1.2.5
 pyrofork==2.3.61
 cloudscraper
-bs4
+beautifulsoup4
 pytz
 motor
+pymongo
 yt-dlp==2024.10.22
 PyJWT
 m3u8
@@ -17,9 +18,6 @@ httpx
 Pillow
 Flask>=3.0.0
 gunicorn==20.1.0
-pyrogram
 python-dotenv
-pymongo
-beautifulsoup4
 pyromod
 setuptools
