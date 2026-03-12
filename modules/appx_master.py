@@ -13,7 +13,7 @@ from config import Config
 from master.database import db_instance
 from master.server import HttpxClient
 from constant import msg
-from modules import appxdata
+from modules import appxdata, apnaex_extractor
 
 IST = pytz.timezone('Asia/Kolkata')
 
@@ -138,12 +138,17 @@ async def set_chat(bot, GROUP_ID, editable1):
 
 async def collect_data(batch_id, api, token, userid):
     try:
-        LOGGER.info(f"Starting extraction for batch {batch_id} using legacy appxdata...")
-        all_urls = await appxdata.collect_data(batch_id, api, token)
+        LOGGER.info(f"Starting extraction for batch {batch_id} using ApnaEx logic...")
+
+        clean_token = token.replace("Bearer ", "") if token else ""
+
+        all_urls = await apnaex_extractor.extract_batch_apnaex_logic(batch_id, api, clean_token, userid)
+
+        if not all_urls:
+            LOGGER.warning("ApnaEx logic returned no data. Falling back to legacy appxdata...")
+            all_urls = await appxdata.collect_data(batch_id, api, token)
+
         return all_urls
-    except Exception as e:
-        LOGGER.error(f"Error collecting data: {e}")
-        return []
 
 
 async def add_batch(bot, m, api, app_name):
