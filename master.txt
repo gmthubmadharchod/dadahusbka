@@ -1,5 +1,5 @@
-xmltodict 
-requests 
+xmltodict
+requests
 pycryptodome
 aiofiles
 aiohttp
@@ -17,3 +17,8 @@ httpx
 Pillow
 Flask>=3.0.0
 gunicorn==20.1.0
+pyrogram
+python-dotenv
+pymongo
+beautifulsoup4
+pyromod
