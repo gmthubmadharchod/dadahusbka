@@ -19,5 +19,5 @@ Pillow
 Flask>=3.0.0
 gunicorn==20.1.0
 python-dotenv
-pyromod
+pyromod==1.5
 setuptools
