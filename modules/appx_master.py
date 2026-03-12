@@ -136,27 +136,53 @@ from modules import appxdata, apnaex_extractor
 
 # ... (check_server, get_user_id, password_login, otp_login, timezone, set_chat functions remain same)
 
-async def collect_data(batch_id, api, token, userid):
-    """Collect all content data from a batch using NEW ApnaEx logic."""
-    try:
-        LOGGER.info(f"Starting extraction for batch {batch_id} using ApnaEx logic...")
+#async def collect_data(batch_id, api, token, userid):
+ #   """Collect all content data from a batch using NEW ApnaEx logic."""
+  #  try:
+  #      LOGGER.info(f"Starting extraction for batch {batch_id} using ApnaEx logic...")
         
         # Clean token for ApnaEx logic (it constructs its own headers)
-        clean_token = token.replace("Bearer ", "") if token else ""
+   #     clean_token = token.replace("Bearer ", "") if token else ""
         
         # 1. Try new ApnaEx extraction logic
-        all_urls = await apnaex_extractor.extract_batch_apnaex_logic(batch_id, api, clean_token, userid)
+   #     all_urls = await apnaex_extractor.extract_batch_apnaex_logic(batch_id, api, clean_token, userid)
         
         # 2. Fallback to old logic if new logic returns nothing (optional, can be removed if confident)
-        if not all_urls:
-            LOGGER.warning("ApnaEx logic returned no data. Falling back to legacy appxdata...")
-            all_urls = await appxdata.collect_data(batch_id, api, token)
+     #   if not all_urls:
+     #       LOGGER.warning("ApnaEx logic returned no data. Falling back to legacy appxdata...")
+      #      all_urls = await appxdata.collect_data(batch_id, api, token)
             
+  #      return all_urls
+ #   except Exception as e:
+  #      LOGGER.error(f"Error collecting data: {e}")
+ #       return []
+
+async def collect_data(batch_id, api, token, userid):
+    """Collect batch content with fallback extractor"""
+    try:
+        LOGGER.info(f"Starting extraction for batch {batch_id}")
+
+        clean_token = token.replace("Bearer ", "") if token else ""
+
+        # 1️⃣ ApnaEx extractor try karo
+        all_urls = await apnaex_extractor.extract_batch_apnaex_logic(
+            batch_id, api, clean_token, userid
+        )
+
+        # 2️⃣ Agar ApnaEx se kuch nahi mila to V2 extractor use karo
+        if not all_urls:
+            LOGGER.warning("ApnaEx returned 0 items, trying V2 extractor...")
+            all_urls = await appxdata.collect_data(batch_id, api, token)
+
+        # 3️⃣ Agar fir bhi empty hai to log kar do
+        if not all_urls:
+            LOGGER.warning(f"No content found for batch {batch_id}")
+
         return all_urls
+
     except Exception as e:
         LOGGER.error(f"Error collecting data: {e}")
         return []
-
 
 async def add_batch(bot, m, api, app_name):
     """Multi-step batch add flow."""
