@@ -128,12 +128,13 @@ async def extract_batch_apnaex_logic(batch_id, api_base, token, userid):
     return all_data
 
 async def handle_course_topic(session, api_base, batch_id, subject_id, subject_name, topic, headers):
-    """Handle topic extraction."""
+    """Handle topic extraction with better Appx compatibility"""
     try:
         topic_id = topic.get("topicid") or topic.get("_id") or topic.get("id")
         topic_name = topic.get("topic_name") or topic.get("name") or "Unknown"
 
-        content_url = f"{api_base}/get/livecourseclassbycoursesubtopconceptapiv3?courseid={batch_id}&subjectid={subject_id}&topicid={topic_id}&start=-1"
+        # Using stable endpoint (not apiv3)
+        content_url = f"{api_base}/get/livecourseclassbycoursesubtopconcept?courseid={batch_id}&subjectid={subject_id}&topicid={topic_id}&start=-1"
 
         data = await fetch(session, content_url, headers)
 
@@ -145,10 +146,35 @@ async def handle_course_topic(session, api_base, batch_id, subject_id, subject_n
             name = item.get("Title") or item.get("title") or "file"
             timestamp = item.get("created_at") or item.get("createdAt") or ""
 
-            # VIDEO
+            # ---------------- VIDEO ----------------
             if item.get("material_type") == "VIDEO":
 
-                url = item.get("video_url") or item.get("url")
+                url = (
+                    item.get("video_url")
+                    or item.get("download_link")
+                    or item.get("url")
+                )
+
+                # encrypted links support (Appx v4)
+                if not url:
+                    enc_links = item.get("encrypted_links", [])
+                    for link in enc_links:
+                        path = link.get("path")
+                        key = link.get("key")
+
+                        if path:
+                            try:
+                                decrypted_path = decrypt(path)
+
+                                if key:
+                                    k1 = decrypt(key)
+                                    k2 = decode_base64(k1)
+                                    url = f"{decrypted_path}*{k2}"
+                                else:
+                                    url = decrypted_path
+                                break
+                            except:
+                                pass
 
                 if url:
                     results.append({
@@ -160,10 +186,32 @@ async def handle_course_topic(session, api_base, batch_id, subject_id, subject_n
                         "timestamp": timestamp
                     })
 
-            # PDF
+            # ---------------- PDF ----------------
             elif item.get("material_type") in ["PDF", "DOCUMENT"]:
 
-                url = item.get("pdf_link") or item.get("url")
+                url = (
+                    item.get("pdf_link")
+                    or item.get("pdfLink")
+                    or item.get("url")
+                )
+
+                # encrypted pdf support
+                if not url:
+                    p1 = item.get("pdf_encrypted_link")
+                    k1 = item.get("pdf_encryption_key")
+
+                    if p1:
+                        try:
+                            dp1 = decrypt(p1)
+
+                            if k1:
+                                dk1 = decrypt(k1)
+                                dk2 = decode_base64(dk1)
+                                url = f"{dp1}*{dk2}"
+                            else:
+                                url = dp1
+                        except:
+                            pass
 
                 if url:
                     results.append({
