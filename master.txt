@@ -22,3 +22,4 @@ python-dotenv
 pymongo
 beautifulsoup4
 pyromod
+setuptools
